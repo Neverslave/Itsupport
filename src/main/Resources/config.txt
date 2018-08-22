@@ -1,0 +1,4 @@
+jdbcUrl = jdbc:mysql://localhost/wenda?useUnicode=true&characterEncoding=utf-8&useSSL=true
+user = root
+password =zhuwanqi19940509
+devMode = true
