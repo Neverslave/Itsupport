@@ -19,6 +19,7 @@
 
     <!-- Custom styles for this template-->
     <link href="/admin/css/sb-admin.css" rel="stylesheet">
+    <script src="/admin/js/login.js"></script>
 
   </head>
 
@@ -29,7 +30,7 @@
         <div class="logo-container">
         <div class="card-header">登录</div>
         <div class="card-body">
-          <form>
+          <form id="login-post">
             <div class="form-group">
               <div class="form-label-group">
                 <input type="email" id="inputEmail" class="form-control" placeholder="账号" required="required" autofocus="autofocus">
@@ -50,7 +51,7 @@
                 </label>
               </div>
             </div>
-            <a class="btn btn-primary btn-block" href="/admin">登录</a>
+            <a class="btn btn-primary btn-block"  onclick="login()">登录</a>
           </form>
           </div>
         </div>
