@@ -11,8 +11,9 @@ public class LoginInterceptor implements Interceptor {
 
         inv.invoke();
         Controller controller = inv.getController();
-      UserAttribute userAttribute=(UserAttribute)controller.getSession().getAttribute("userAttribute");
-      if(userAttribute == null){
+        String session = controller.getSessionAttr("user");
+      //UserAttribute userAttribute=(UserAttribute)controller.getSession().getAttribute("userAttribute");
+      if(session == null){
           //若用户为空则重定向到登录页面
           controller.redirect("/admin/login");
       }
