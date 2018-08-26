@@ -18,6 +18,7 @@ login = function() {
             dataType:'json',
               success:function(data){
                  if(data.msg==="2"){
+                     alert(data)
                        location.href="/admin";
                 }else{
                      alert("登录失败，请重试!");

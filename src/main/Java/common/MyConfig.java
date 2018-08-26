@@ -8,6 +8,7 @@ import com.jfinal.plugin.druid.DruidPlugin;
 import com.jfinal.template.Engine;
 import mdoel.User;
 import router.AdminRouter;
+import router.FrontRouter;
 
 
 public class MyConfig extends JFinalConfig{
@@ -27,6 +28,7 @@ public class MyConfig extends JFinalConfig{
     @Override
     public void configRoute(Routes me) {
         me.add(new AdminRouter());
+        me.add(new FrontRouter());
 
 
     }
