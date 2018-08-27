@@ -6,6 +6,8 @@ import com.jfinal.kit.PropKit;
 import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
 import com.jfinal.plugin.druid.DruidPlugin;
 import com.jfinal.template.Engine;
+import mdoel.LoginLog;
+import mdoel.Session;
 import mdoel.User;
 import router.AdminRouter;
 import router.FrontRouter;
@@ -48,6 +50,8 @@ public class MyConfig extends JFinalConfig{
         arp.setBaseSqlTemplatePath(PathKit.getWebRootPath());//设置sql模板位置
         //arp.addSqlTemplate("/sql/sql.sql");
         arp.addMapping("user","user", User.class);
+        arp.addMapping("session", Session.class);
+        arp.addMapping("login_log","username", LoginLog.class);
        // arp.addMapping("user", Blog.class);//表与model相关联 数据库映射需要在加入plugin前
 
         me.add(arp);

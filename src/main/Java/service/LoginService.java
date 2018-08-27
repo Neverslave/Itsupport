@@ -7,6 +7,8 @@ import com.jfinal.plugin.activerecord.Record;
 import com.jfinal.plugin.ehcache.CacheKit;
 
 import com.jfinal.kit.Ret;
+import mdoel.Session;
+import mdoel.User;
 
 import java.util.Date;
 
@@ -16,11 +18,11 @@ import java.util.Date;
 public class LoginService {
 
     public static final LoginService me = new LoginService();
-
+    private User userDao = new User().dao();
 
 
     // 存放登录用户的 cacheName
-    public static final String loginAccountCacheName = "loginAccount";
+    public static final String loginAccountCacheName = "user";
 
     // "jfinalId" 仅用于 cookie 名称，其它地方如 cache 中全部用的 "sessionId" 来做 key
     public static final String sessionIdName = "jfinalId";
@@ -31,13 +33,15 @@ public class LoginService {
     public Ret login(String userName, String password, boolean keepLogin, String loginIp) {
         userName = userName.toLowerCase().trim();
         password = password.trim();
-        Account loginAccount = accountDao.findFirst("select * from account where userName=? limit 1", userName);
-        if (loginAccount == null) {
+        User user = userDao.findFirst("select * from user where username=?", userName);
+        System.out.println(user.getUsername()+" "+user.getPassword());
+        if (user == null) {
             return Ret.fail("msg", "用户名或密码不正确");
         }
 
+
         // 未通过密码验证
-        if (loginAccount.getPassword().equals(hashedPass) == false) {
+        if (user.getPassword().equals(password)) {
             return Ret.fail("msg", "用户名或密码不正确");
         }
 
@@ -51,24 +55,24 @@ public class LoginService {
         Session session = new Session();
         String sessionId = StrKit.getRandomUUID();
         session.setId(sessionId);
-        session.setAccountId(loginAccount.getId());
+        session.setUsername(user.getUsername());
         session.setExpireAt(expireAt);
         if ( ! session.save()) {
             return Ret.fail("msg", "保存 session 到数据库失败，请联系管理员");
         }
 
-        loginAccount.removeSensitiveInfo();                                 // 移除 password 与 salt 属性值
-        loginAccount.put("sessionId", sessionId);                          // 保存一份 sessionId 到 loginAccount 备用
-        CacheKit.put(loginAccountCacheName, sessionId, loginAccount);
+                                      // 移除 password 与 salt 属性值
+        user.put("sessionId", sessionId);                          // 保存一份 sessionId 到 loginAccount 备用
+        CacheKit.put(loginAccountCacheName, sessionId, user);
 
-        createLoginLog(loginAccount.getId(), loginIp);
+        createLoginLog(user.getUsername(), loginIp);
 
         return Ret.ok(sessionIdName, sessionId)
-                .set(loginAccountCacheName, loginAccount)
+                .set(loginAccountCacheName, user)
                 .set("maxAgeInSeconds", maxAgeInSeconds);   // 用于设置 cookie 的最大存活时间
     }
 
-    public Account getLoginAccountWithSessionId(String sessionId) {
+    public User getLoginAccountWithSessionId(String sessionId) {
         return CacheKit.get(loginAccountCacheName, sessionId);
     }
 
@@ -80,7 +84,7 @@ public class LoginService {
      * 2：在数据库里面取，如果取到了，则检测是否已过期，如果过期则清除记录，
      *     如果没过期则先放缓存一份，然后再返回
      */
-    public Account loginWithSessionId(String sessionId, String loginIp) {
+    public User loginWithSessionId(String sessionId, String loginIp) {
         Session session = Session.dao.findById(sessionId);
         if (session == null) {      // session 不存在
             return null;
@@ -90,14 +94,14 @@ public class LoginService {
             return null;
         }
 
-        Account loginAccount = accountDao.findById(session.getAccountId());
+        User loginAccount = userDao.findById(session.getUsername());
         // 找到 loginAccount 并且 是正常状态 才允许登录
-        if (loginAccount != null && loginAccount.isStatusOk()) {
-            loginAccount.removeSensitiveInfo();                                 // 移除 password 与 salt 属性值
+        if (loginAccount != null) {
+
             loginAccount.put("sessionId", sessionId);                          // 保存一份 sessionId 到 loginAccount 备用
             CacheKit.put(loginAccountCacheName, sessionId, loginAccount);
 
-            createLoginLog(loginAccount.getId(), loginIp);
+            createLoginLog(loginAccount.getUsername(), loginIp);
             return loginAccount;
         }
         return null;
@@ -106,69 +110,12 @@ public class LoginService {
     /**
      * 创建登录日志
      */
-    private void createLoginLog(Integer accountId, String loginIp) {
-        Record loginLog = new Record().set("accountId", accountId).set("ip", loginIp).set("loginAt", new Date());
+    private void createLoginLog(String username, String loginIp) {
+        Record loginLog = new Record().set("username", username).set("ip", loginIp).set("loginAt", new Date());
         Db.save("login_log", loginLog);
     }
 
-    /**
-     * 发送密码找回授权邮件
-     */
-    public Ret sendRetrievePasswordAuthEmail(String userName) {
-        if (StrKit.isBlank(userName) || userName.indexOf('@') == -1) {
-            return Ret.fail("msg", "email 格式不正确，请重新输入");
-        }
-        userName = userName.toLowerCase().trim();   // email 转成小写
-        Account account = accountDao.findFirst("select * from account where userName=? limit 1", userName);
-        if (account == null) {
-            return Ret.fail("msg", "您输入的 email 还没注册，无法找回密码");
-        }
 
-        String authCode = AuthCodeService.me.createRetrievePasswordAuthCode(account.getId());
-
-        String title = "JFinal 密码找回邮件";
-        String content = "在浏览器地址栏里输入并访问下面链接即可重置密码：\n\n"
-                + " http://www.jfinal.com/login/retrievePassword?authCode="
-                + authCode;
-
-        String emailServer = PropKit.get("emailServer");
-        String fromEmail = PropKit.get("fromEmail");
-        String emailPass = PropKit.get("emailPass");
-        String toEmail = account.getStr("userName");
-        try {
-            EmailKit.sendEmail(emailServer, fromEmail, emailPass, toEmail, title, content);
-            return Ret.ok("msg", "密码找回邮件已发送至邮箱，请收取邮件并重置密码");
-        } catch (Exception e) {
-            return Ret.fail("msg", "密码找回邮件发送失败，可能是邮件服务器出现故障，请去JFinal官方QQ群留言给群主");
-        }
-    }
-
-    /**
-     * 找回密码
-     */
-    public Ret retrievePassword(String authCodeId, String newPassword) {
-        if (StrKit.isBlank(newPassword)) {
-            return Ret.fail("msg", "密码不能为空");
-        }
-        if (newPassword.length() < 6) {
-            return Ret.fail("msg", "密码长度不能小于6");
-        }
-
-        AuthCode authCode = AuthCodeService.me.getAuthCode(authCodeId);
-        if (authCode != null && authCode.isValidRetrievePasswordAuthCode()) {
-            String salt = HashKit.generateSaltForSha256();
-            newPassword = HashKit.sha256(salt + newPassword);
-            int accountId = authCode.getAccountId();
-            int result = Db.update("update account set password=?, salt=? where id=? limit 1", newPassword, salt, accountId);
-            if (result > 0) {
-                return Ret.ok("msg", "密码更新成功，现在即可登录");
-            } else {
-                return Ret.fail("msg", "未找到账号，请联系管理员");
-            }
-        } else {
-            return Ret.fail("msg", "authCode 不存在或已经失效，可以尝试重新发送找回密码邮件");
-        }
-    }
 
     /**
      * 退出登录
@@ -183,10 +130,9 @@ public class LoginService {
     /**
      * 从数据库重新加载登录账户信息
      */
-    public void reloadLoginAccount(Account loginAccountOld) {
+    public void reloadLoginAccount(User loginAccountOld) {
         String sessionId = loginAccountOld.get("sessionId");
-        Account loginAccount = accountDao.findFirst("select * from account where id=? limit 1", loginAccountOld.getId());
-        loginAccount.removeSensitiveInfo();               // 移除 password 与 salt 属性值
+        User loginAccount = userDao.findFirst("select * from user where username=? limit 1", loginAccountOld.getUsername());
         loginAccount.put("sessionId", sessionId);        // 保存一份 sessionId 到 loginAccount 备用
 
         // 集群方式下，要做一通知其它节点的机制，让其它节点使用缓存更新后的数据，

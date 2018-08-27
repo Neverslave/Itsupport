@@ -2,28 +2,44 @@ package controller;
 import com.jfinal.aop.Before;
 import com.jfinal.core.ActionKey;
 import com.jfinal.core.Controller;
+import com.jfinal.kit.Ret;
+import common.Kit.IPkit;
 import interceptor.LoginInterceptor;
 import mdoel.User;
+import service.LoginService;
 
 
 import javax.servlet.http.Cookie;
 import java.util.ArrayList;
 import java.util.List;
 
-import static mdoel.User.userDao;
 
 
 public class AdminController extends Controller {
-    //@Before(LoginInterceptor.class)
+    private User userDao = new User().dao();
+    LoginService srv = LoginService.me;
     public void index() {
-       String users =  getCookie("users");
-       if(users==null){
-           redirect("/login");
-       }else{
-           render("/admin/index.html");
-       }
+    keepPara("returnUrl");
+    render("login.html"); //跳转登录页面
 
 
+    }
+
+    /**
+     * 登录
+     */
+    public void doLogin(){
+        Boolean keepLogin = getParaToBoolean("keepLogin",false);
+        String loginIp = IPkit.getRealIp(getRequest());
+        Ret ret = srv.login(getPara("username"),getPara("password"),keepLogin,loginIp);
+        if(ret.isOk()){
+            String sessionId = ret.getStr(LoginService.sessionIdName);
+            int maxAgeInSeconds = ret.getInt("maxAgeInSeconds");
+            setCookie(LoginService.sessionIdName,sessionId,maxAgeInSeconds,true);//放置cookie
+            setAttr(LoginService.loginAccountCacheName,ret.get(LoginService.loginAccountCacheName));
+            ret.set("returnUrl",getPara("returnUrl","/admin"));
+        }
+        renderJson(ret);
     }
 
 
@@ -34,18 +50,8 @@ public class AdminController extends Controller {
 
     }
 
-    public void loginValidate() {
-        String user = getPara("username");
-        String password = getPara("password");
-        String pwd = userDao.findById(user).get("password");
-        if (password == pwd) {
-            setCookie("users", user, 3600);
-            renderJson("msg", "1");
 
-        } else {
-            renderJson("msg", "2");
-        }
 
 
     }
-}
+
