@@ -1,16 +1,16 @@
 package common;
-
+import com.jfinal.plugin.cron4j.Cron4jPlugin;
+import com.jfinal.plugin.ehcache.EhCachePlugin;
+import model.*;
 import com.jfinal.config.*;
 import com.jfinal.kit.PathKit;
 import com.jfinal.kit.PropKit;
 import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
 import com.jfinal.plugin.druid.DruidPlugin;
 import com.jfinal.template.Engine;
-import mdoel.LoginLog;
-import mdoel.Session;
-import mdoel.User;
 import router.AdminRouter;
 import router.FrontRouter;
+
 
 
 public class MyConfig extends JFinalConfig{
@@ -55,7 +55,8 @@ public class MyConfig extends JFinalConfig{
        // arp.addMapping("user", Blog.class);//表与model相关联 数据库映射需要在加入plugin前
 
         me.add(arp);
-
+        me.add(new EhCachePlugin());
+        me.add(new Cron4jPlugin());
 
     }
 

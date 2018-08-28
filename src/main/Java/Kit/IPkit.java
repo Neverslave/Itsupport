@@ -1,4 +1,4 @@
-package common.Kit;
+package Kit;
 
 
 import java.net.InetAddress;

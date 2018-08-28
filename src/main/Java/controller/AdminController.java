@@ -1,16 +1,13 @@
 package controller;
-import com.jfinal.aop.Before;
-import com.jfinal.core.ActionKey;
 import com.jfinal.core.Controller;
+import com.jfinal.json.Json;
+import com.jfinal.kit.JsonKit;
 import com.jfinal.kit.Ret;
-import common.Kit.IPkit;
-import interceptor.LoginInterceptor;
-import mdoel.User;
+import Kit.IPkit;
 import service.LoginService;
+import model.*;
+import service.UserService;
 
-
-import javax.servlet.http.Cookie;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -19,10 +16,13 @@ public class AdminController extends Controller {
     private User userDao = new User().dao();
     LoginService srv = LoginService.me;
     public void index() {
-    keepPara("returnUrl");
-    render("login.html"); //跳转登录页面
+        if(getCookie(LoginService.sessionIdName)==null){
+            redirect("/login");
+        }else {
+            //keepPara("returnUrl");
+            render("index.html");
 
-
+        }
     }
 
     /**
@@ -43,13 +43,13 @@ public class AdminController extends Controller {
     }
 
 
-    public void users() {
-        List<User> users;
-        users = userDao.find("select * from users");
-        System.out.println(users);
+    public void getUsers() {
+        renderJson("rows:"+new UserService().getUsers());
 
     }
-
+        public void users(){
+        render("/admin/users.html");
+        }
 
 
 

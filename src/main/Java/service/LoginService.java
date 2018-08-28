@@ -1,14 +1,11 @@
 package service;
-import com.jfinal.kit.HashKit;
-import com.jfinal.kit.PropKit;
 import com.jfinal.kit.StrKit;
 import com.jfinal.plugin.activerecord.Db;
 import com.jfinal.plugin.activerecord.Record;
 import com.jfinal.plugin.ehcache.CacheKit;
+import model.*;
 
 import com.jfinal.kit.Ret;
-import mdoel.Session;
-import mdoel.User;
 
 import java.util.Date;
 
@@ -34,14 +31,13 @@ public class LoginService {
         userName = userName.toLowerCase().trim();
         password = password.trim();
         User user = userDao.findFirst("select * from user where username=?", userName);
-        System.out.println(user.getUsername()+" "+user.getPassword());
         if (user == null) {
             return Ret.fail("msg", "用户名或密码不正确");
         }
 
 
         // 未通过密码验证
-        if (user.getPassword().equals(password)) {
+        if (user.getPassword().equals(password)==false) {
             return Ret.fail("msg", "用户名或密码不正确");
         }
 
@@ -61,10 +57,8 @@ public class LoginService {
             return Ret.fail("msg", "保存 session 到数据库失败，请联系管理员");
         }
 
-                                      // 移除 password 与 salt 属性值
         user.put("sessionId", sessionId);                          // 保存一份 sessionId 到 loginAccount 备用
         CacheKit.put(loginAccountCacheName, sessionId, user);
-
         createLoginLog(user.getUsername(), loginIp);
 
         return Ret.ok(sessionIdName, sessionId)
@@ -111,7 +105,7 @@ public class LoginService {
      * 创建登录日志
      */
     private void createLoginLog(String username, String loginIp) {
-        Record loginLog = new Record().set("username", username).set("ip", loginIp).set("loginAt", new Date());
+        Record loginLog = new Record().set("username", username).set("ip", loginIp).set("date", new Date());
         Db.save("login_log", loginLog);
     }
 
