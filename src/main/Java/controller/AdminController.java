@@ -44,7 +44,7 @@ public class AdminController extends Controller {
 
 
     public void getUsers() {
-        renderJson("rows:"+new UserService().getUsers());
+        renderJson(new UserService().getUsers());
 
     }
         public void users(){

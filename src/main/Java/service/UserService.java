@@ -19,6 +19,28 @@ public class UserService {
          return usersJson;
 
     }
+    public boolean addUsers(User user){
+        if(user.dao().save()){
+
+            return true;
+        }else{
+            return false;
+        }
+
+
+    }
+    public boolean deleteUser(User user){
+
+        if(user.dao().delete()){
+            return true;
+        }else  {
+            return false;
+        }
+    }
+    public boolean editUser(User user){
+        user.dao().setPassword(user.getPassword());
+        return true;
+    }
 
    
 }

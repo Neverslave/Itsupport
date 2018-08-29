@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<html >
 
 <head>
 
@@ -26,6 +25,7 @@
     <script src="/admin/css/bootstrap-table.min.js"></script>
     <link rel="stylesheet" href="/admin/css/bootstrap-table.min.css">
     <link rel="stylesheet" href="/admin/css/bootstrap.min.css">
+    <script src="/admin/js/bootstrap-table-zh-CN.js"></script>
 
 </head>
 
@@ -228,14 +228,14 @@
                 minimumCountColumns: 2,             //最少允许的列数
                 clickToSelect: true,                //是否启用点击选中行
                 height: 500,                        //行高，如果没有设置height属性，表格自动根据记录条数觉得表格高度
-                uniqueId: "user",                     //每一行的唯一标识，一般为主键列
+                uniqueId: "username",                     //每一行的唯一标识，一般为主键列
                 showToggle:true,                    //是否显示详细视图和列表视图的切换按钮
                 cardView: false,                    //是否显示详细视图
                 detailView: false,                   //是否显示父子表
                 columns: [{
                     checkbox: true
                 }, {
-                    field: 'user',
+                    field: 'username',
                     title: '用户名'
                 }, {
                     field: 'password',
@@ -246,7 +246,12 @@
                 }, {
                     field: 'lastLoginTime',
                     title: '最后登陆时间'
-                }, ]
+                },
+                    {
+                        field:'isAdmin',
+                        title:'是否为管理员'
+                    }]
+
             });
         };
 
